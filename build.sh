@@ -3,7 +3,7 @@ set -e
 
 DOCKER_PHP_REPO="brabholdsa/php"
 DOCKER_PHP_DEV_REPO="brabholdsa/php-dev"
-LAST_PHP_VERSION="8.0"
+LAST_PHP_VERSION="8.1"
 php_version=$1
 git_branch=$1
 
