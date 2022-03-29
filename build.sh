@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 DOCKER_PHP_REPO="brabholdsa/php"
 DOCKER_PHP_DEV_REPO="brabholdsa/php-dev"
