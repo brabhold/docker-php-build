@@ -31,7 +31,7 @@ for i in docker-php docker-php-dev; do
   for j in apache cli fpm; do
     tag=$php_version-$j
     echo "Build $docker_repo:$tag"
-    docker build $build_arg -t $docker_repo:$tag $j
+    docker build --no-cache $build_arg -t $docker_repo:$tag $j
     docker push $docker_repo:$tag
   done
 
