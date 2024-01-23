@@ -3,9 +3,9 @@
 Usage :
 
 ```shell
-./build.sh 7.4 buster
-./build.sh 8.0 buster
-./build.sh 8.1 buster
-./build.sh 8.2 bullseye
-./build.sh 8.3 bookworm
+./build.sh 7.4
+./build.sh 8.0
+./build.sh 8.1
+./build.sh 8.2
+./build.sh 8.3
 ```
