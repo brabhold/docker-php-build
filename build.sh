@@ -1,45 +1,74 @@
 #!/usr/bin/env bash
 set -e
 
-DOCKER_PHP_REPO="brabholdsa/php"
-DOCKER_PHP_DEV_REPO="brabholdsa/php-dev"
-GREEN='\033[0;32m' # Green color
-NC='\033[0m' # No color
-php_version=${1:-"8.3"}
-debian=${2:-"bookworm"}
+set_env() {
+  if [ -f "${1}" ]; then
+    source ${1}
+  fi
+}
 
+unset_env() {
+  if [ -f "${1}" ]; then
+    unset $(grep -v '^#' ${1} | awk 'BEGIN { FS = "=" } ; { print $1 }')
+  fi
+}
+
+building_message() {
+  echo -e "\033[0;32mBuilding ${1} from ${2}\033[0m"
+}
+
+php_version=${1:-"8.3"}
 project_path="$(pwd)/.."
 
-for i in docker-php docker-php-dev; do
-  pushd "${project_path}/${i}"
-  echo -e "${GREEN}Current dir: $(pwd)${NC}"
+for i in apache cli; do
+  tag=${php_version}-${i}
 
-  if [[ ${i} =~ 'dev' ]]; then
-    docker_repo=${DOCKER_PHP_DEV_REPO}
-    base_org=${DOCKER_PHP_REPO}
-  else
-    docker_repo=${DOCKER_PHP_REPO}
-    base_org="yannickvh/php-prod"
-  fi
+  # php-prod
+  pushd "${project_path}/docker-php"
+  set_env ${php_version}.env
+  php_base_image="yannickvh/php-prod:${tag}"
+  php_prod_image_tag="brabholdsa/php:${tag}"
+  building_message ${php_prod_image_tag} ${php_base_image}
+  docker build \
+    --no-cache \
+    --tag "${php_prod_image_tag}" \
+    --build-arg PHP_BASE_IMAGE="${php_base_image}" \
+    --build-arg WKHTMLTOPDF_URL="${WKHTMLTOPDF_URL}" \
+    .
+  docker push ${php_prod_image_tag}
 
-  for j in apache cli; do
-    tag="${php_version}-${j}"
-    echo -e "${GREEN}Building ${docker_repo}:${tag}${NC}"
-    docker build --no-cache --tag "${docker_repo}:${tag}" --build-arg PHP_BASE_IMAGE="${base_org}:${tag}" --file "${debian}/${j}/Dockerfile" .
-    docker push "${docker_repo}:${tag}"
+  # php-prod imagick
+  imagick_prod_image_tag="${php_prod_image_tag}-imagick"
+  building_message ${imagick_prod_image_tag} ${php_prod_image_tag}
+  docker build \
+    --no-cache \
+    --tag ${imagick_prod_image_tag} \
+    --build-arg PHP_BASE_IMAGE="${php_prod_image_tag}" \
+    --file "Dockerfile.imagick" \
+    .
+  docker push ${imagick_prod_image_tag} 
+  unset_env ${php_version}.env
+  popd > /dev/null
 
-    imagick_tag="${docker_repo}:${tag}-imagick"
+  # php-dev
+  pushd "${project_path}/docker-php-dev"
+  php_dev_image_tag="brabholdsa/php-dev:${tag}"
+  building_message ${php_dev_image_tag} ${php_prod_image_tag}
+  docker build \
+    --no-cache \
+    --tag "${php_dev_image_tag}" \
+    --build-arg PHP_BASE_IMAGE="${php_prod_image_tag}" \
+    .
+  docker push ${php_dev_image_tag}
 
-    if [[ ${i} =~ 'dev' ]]; then
-      imagick_base_image="${DOCKER_PHP_REPO}:${tag}-imagick"
-      imagick_path="${debian}/${j}"
-    else
-      imagick_base_image="${docker_repo}:${tag}"
-      imagick_path="imagick"
-    fi
-    
-    echo -e "${GREEN}Building ${imagick_tag}${NC}"
-    docker build --no-cache --tag ${imagick_tag} --build-arg PHP_BASE_IMAGE=${imagick_base_image} --file "${imagick_path}/Dockerfile" .
-    docker push "${docker_repo}:${tag}"
-  done
+  # php-dev imagick
+  imagick_dev_image_tag="${php_dev_image_tag}-imagick"
+  building_message ${imagick_dev_image_tag} ${imagick_prod_image_tag}
+  docker build \
+    --no-cache \
+    --tag "${imagick_dev_image_tag}" \
+    --build-arg PHP_BASE_IMAGE="${imagick_prod_image_tag}" \
+    .
+  docker push ${imagick_dev_image_tag}
+  popd > /dev/null
 done
