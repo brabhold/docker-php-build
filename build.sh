@@ -52,12 +52,14 @@ for i in apache cli; do
 
   # php-dev
   pushd "${project_path}/docker-php-dev"
+  set_env ${php_version}.env
   php_dev_image_tag="brabholdsa/php-dev:${tag}"
   building_message ${php_dev_image_tag} ${php_prod_image_tag}
   docker build \
     --no-cache \
     --tag "${php_dev_image_tag}" \
     --build-arg PHP_BASE_IMAGE="${php_prod_image_tag}" \
+    --build-arg NODE_VERSION="${NODE_VERSION}" \
     .
   docker push ${php_dev_image_tag}
 
@@ -68,7 +70,9 @@ for i in apache cli; do
     --no-cache \
     --tag "${imagick_dev_image_tag}" \
     --build-arg PHP_BASE_IMAGE="${imagick_prod_image_tag}" \
+    --build-arg NODE_VERSION="${NODE_VERSION}" \
     .
   docker push ${imagick_dev_image_tag}
+  unset_env ${php_version}.env
   popd > /dev/null
 done
