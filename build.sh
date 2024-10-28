@@ -18,9 +18,10 @@ building_message() {
 }
 
 php_version=${1:-"8.3"}
+image_variants=${2:-"apache cli"}
 project_path="$(pwd)/.."
 
-for i in apache cli; do
+for i in ${image_variants}; do
   tag=${php_version}-${i}
 
   # php-prod
