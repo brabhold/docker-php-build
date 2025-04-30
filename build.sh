@@ -18,23 +18,21 @@ building_message() {
 }
 
 php_version=${1:-"8.3"}
-image_variants=${2:-"apache cli"}
+targets=${2:-"apache cli"}
 project_path="$(pwd)/.."
 
-for i in ${image_variants}; do
-  tag=${php_version}-${i}
+for target in ${targets}; do
+  tag=${php_version}-${target}
 
   # php-prod
   pushd "${project_path}/docker-php"
-  set_env ${php_version}.env
-  php_base_image="yannickvh/php-prod:${tag}"
   php_prod_image_tag="brabholdsa/php:${tag}"
-  building_message ${php_prod_image_tag} ${php_base_image}
+  building_message ${php_prod_image_tag} amd64/debian:bookworm-slim
   docker build \
-    --no-cache \
+    --quiet \
+    --target ${target} \
     --tag "${php_prod_image_tag}" \
-    --build-arg PHP_BASE_IMAGE="${php_base_image}" \
-    --build-arg WKHTMLTOPDF_URL="${WKHTMLTOPDF_URL}" \
+    --build-arg PHP_VERSION="${php_version}" \
     .
   docker push ${php_prod_image_tag}
 
@@ -42,13 +40,13 @@ for i in ${image_variants}; do
   imagick_prod_image_tag="${php_prod_image_tag}-imagick"
   building_message ${imagick_prod_image_tag} ${php_prod_image_tag}
   docker build \
-    --no-cache \
+    --quiet \
     --tag ${imagick_prod_image_tag} \
     --build-arg PHP_BASE_IMAGE="${php_prod_image_tag}" \
+    --build-arg PHP_VERSION="${php_version}" \
     --file "Dockerfile.imagick" \
     .
   docker push ${imagick_prod_image_tag} 
-  unset_env ${php_version}.env
   popd > /dev/null
 
   # php-dev
@@ -57,9 +55,10 @@ for i in ${image_variants}; do
   php_dev_image_tag="brabholdsa/php-dev:${tag}"
   building_message ${php_dev_image_tag} ${php_prod_image_tag}
   docker build \
-    --no-cache \
+    --quiet \
     --tag "${php_dev_image_tag}" \
     --build-arg PHP_BASE_IMAGE="${php_prod_image_tag}" \
+    --build-arg PHP_VERSION="${php_version}" \
     --build-arg NODE_VERSION="${NODE_VERSION}" \
     .
   docker push ${php_dev_image_tag}
@@ -68,9 +67,10 @@ for i in ${image_variants}; do
   imagick_dev_image_tag="${php_dev_image_tag}-imagick"
   building_message ${imagick_dev_image_tag} ${imagick_prod_image_tag}
   docker build \
-    --no-cache \
+    --quiet \
     --tag "${imagick_dev_image_tag}" \
     --build-arg PHP_BASE_IMAGE="${imagick_prod_image_tag}" \
+    --build-arg PHP_VERSION="${php_version}" \
     --build-arg NODE_VERSION="${NODE_VERSION}" \
     .
   docker push ${imagick_dev_image_tag}
