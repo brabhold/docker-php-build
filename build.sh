@@ -1,25 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
-set_env() {
-  if [ -f "${1}" ]; then
-    source ${1}
-  fi
-}
-
-unset_env() {
-  if [ -f "${1}" ]; then
-    unset $(grep -v '^#' ${1} | awk 'BEGIN { FS = "=" } ; { print $1 }')
-  fi
-}
-
 building_message() {
   echo -e "\033[0;32mBuilding ${1} from ${2}\033[0m"
 }
 
 php_version=${1:-"8.3"}
 targets=${2:-"apache cli"}
+build_path=$(pwd)
 project_path="$(pwd)/.."
+
+source ${php_version}.env
 
 for target in ${targets}; do
   tag=${php_version}-${target}
@@ -51,7 +42,6 @@ for target in ${targets}; do
 
   # php-dev
   pushd "${project_path}/docker-php-dev"
-  set_env ${php_version}.env
   php_dev_image_tag="brabholdsa/php-dev:${tag}"
   building_message ${php_dev_image_tag} ${php_prod_image_tag}
   docker build \
@@ -74,6 +64,7 @@ for target in ${targets}; do
     --build-arg NODE_VERSION="${NODE_VERSION}" \
     .
   docker push ${imagick_dev_image_tag}
-  unset_env ${php_version}.env
   popd > /dev/null
 done
+
+unset $(grep -v '^#' ${php_version}.env | awk 'BEGIN { FS = "=" } ; { print $1 }')
